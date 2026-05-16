@@ -10,3 +10,9 @@ pnpm-debug.log*
 out
 .open-next
 next-dev*.log
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
