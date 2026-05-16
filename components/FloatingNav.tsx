@@ -8,13 +8,6 @@ import { useLanguage } from "@/components/LanguageProvider";
 
 type SectionId = "home" | "projects" | "about" | "contact";
 
-const sectionIndexes: Record<SectionId, string> = {
-  home: "01",
-  projects: "02",
-  about: "03",
-  contact: "04"
-};
-
 const menuItems: Array<{
   id: SectionId | "services";
   labelKey: "projects" | "about" | "services" | "contact";
@@ -26,10 +19,6 @@ const menuItems: Array<{
   { id: "contact", labelKey: "contact", index: "04" }
 ];
 
-function isSectionId(value: string): value is SectionId {
-  return value === "home" || value === "projects" || value === "about" || value === "contact";
-}
-
 export default function FloatingNav() {
   const pathname = usePathname();
   const router = useRouter();
@@ -37,30 +26,19 @@ export default function FloatingNav() {
   const text = uiText[lang];
   const headerRef = useRef<HTMLElement>(null);
   const brandRef = useRef<HTMLButtonElement>(null);
-  const statusRef = useRef<HTMLDivElement>(null);
+  const langButtonRef = useRef<HTMLButtonElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const menuTimeline = useRef<gsap.core.Timeline | null>(null);
-  const [active, setActive] = useState<SectionId>("home");
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const { gsap, ScrollTrigger } = registerGsap();
 
-    const handleActive = (event: Event) => {
-      const detail = (event as CustomEvent<{ id: string }>).detail;
-
-      if (detail?.id && isSectionId(detail.id)) {
-        setActive(detail.id);
-      }
-    };
-
-    window.addEventListener("section:active", handleActive);
-
     const context = gsap.context(() => {
       const header = headerRef.current;
       const brand = brandRef.current;
-      const status = statusRef.current;
+      const langButton = langButtonRef.current;
 
       gsap.fromTo(
         header,
@@ -74,13 +52,13 @@ export default function FloatingNav() {
         }
       );
 
-      if (brand && status) {
+      if (brand && langButton) {
         gsap.set(brand, {
           x: 0,
           transformOrigin: "50% 50%",
           willChange: "transform"
         });
-        gsap.set(status, {
+        gsap.set(langButton, {
           autoAlpha: 1,
           y: 0,
           willChange: "opacity, transform"
@@ -109,7 +87,7 @@ export default function FloatingNav() {
             0
           )
           .to(
-            status,
+            langButton,
             {
               autoAlpha: 0,
               y: -8,
@@ -125,22 +103,6 @@ export default function FloatingNav() {
         onUpdate: (self) => {
           setScrolled(self.scroll() > 12);
         }
-      });
-
-      Object.keys(sectionIndexes).forEach((id) => {
-        const section = document.getElementById(id);
-
-        if (!section || !isSectionId(id)) {
-          return;
-        }
-
-        ScrollTrigger.create({
-          trigger: section,
-          start: "top center",
-          end: "bottom center",
-          onEnter: () => setActive(id),
-          onEnterBack: () => setActive(id)
-        });
       });
 
       gsap.set(overlayRef.current, { autoAlpha: 0, pointerEvents: "none" });
@@ -183,7 +145,6 @@ export default function FloatingNav() {
     });
 
     return () => {
-      window.removeEventListener("section:active", handleActive);
       context.revert();
     };
   }, [pathname]);
@@ -227,15 +188,11 @@ export default function FloatingNav() {
       easing: (time: number) => Math.min(1, 1.001 - 2 ** (-10 * time))
     });
   };
-
-  const statusLabel = text.nav.status[active];
-  const statusIndex = sectionIndexes[active];
-
   return (
     <>
       <header
         ref={headerRef}
-        className={`creative-nav fixed inset-x-0 top-0 z-[90] h-20 opacity-0 ${
+        className={`creative-nav fixed inset-x-0 top-0 z-[100] h-20 opacity-0 ${
           scrolled ? "is-scrolled" : ""
         } ${open ? "is-open" : ""}`}
       >
@@ -248,12 +205,14 @@ export default function FloatingNav() {
           {text.nav.brand}
         </button>
 
-        <div
-          ref={statusRef}
-          className="creative-status text-[0.66rem] font-black uppercase leading-none tracking-normal"
+        <button
+          ref={langButtonRef}
+          type="button"
+          onClick={toggleLang}
+          className="creative-lang-button text-[0.66rem] font-black uppercase leading-none tracking-normal"
         >
-          {statusLabel} / {statusIndex}
-        </div>
+          {lang === "en" ? "中文" : "EN"}
+        </button>
 
         <button
           type="button"

@@ -6,7 +6,7 @@ import ServicesSection from "@/components/ServicesSection";
 
 export default function Home() {
   return (
-    <main className="relative z-10">
+    <main className="relative z-10 min-h-[500vh] overflow-x-hidden bg-transparent text-white">
       <HeroSection />
       <ProjectsHorizontal />
       <ManifestoSection />

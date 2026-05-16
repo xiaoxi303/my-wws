@@ -3,7 +3,7 @@ import { Archivo_Black, Inter_Tight } from "next/font/google";
 import SmoothScroll from "@/components/SmoothScroll";
 import PageTransition from "@/components/PageTransition";
 import CustomCursor from "@/components/CustomCursor";
-import WebGLScene from "@/components/WebGLScene";
+import MangoSplineBackground from "@/components/MangoSplineBackground";
 import FloatingNav from "@/components/FloatingNav";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import "./globals.css";
@@ -44,7 +44,7 @@ export default function RootLayout({
       <body>
         <LanguageProvider>
           <SmoothScroll />
-          <WebGLScene />
+          <MangoSplineBackground />
           <CustomCursor />
           <FloatingNav />
           <PageTransition>{children}</PageTransition>
