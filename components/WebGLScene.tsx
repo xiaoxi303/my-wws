@@ -12,6 +12,10 @@ type SceneState = {
 
 type SceneEvent = CustomEvent<{ progress: number }>;
 
+type DeviceOrientationEventWithPermission = typeof DeviceOrientationEvent & {
+  requestPermission?: () => Promise<PermissionState>;
+};
+
 export default function WebGLScene() {
   const mountRef = useRef<HTMLDivElement>(null);
 
@@ -144,6 +148,8 @@ export default function WebGLScene() {
     scene.add(wireGroup);
 
     const mouse = new THREE.Vector2(0, 0);
+    const gyro = new THREE.Vector2(0, 0);
+    const input = new THREE.Vector2(0, 0);
     const state: SceneState = {
       hero: 0,
       about: 0,
@@ -174,6 +180,73 @@ export default function WebGLScene() {
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     };
+
+    const handleOrientation = (event: DeviceOrientationEvent) => {
+      const gamma = event.gamma ?? 0;
+      const beta = event.beta ?? 0;
+
+      gyro.x = THREE.MathUtils.clamp(gamma / 35, -1, 1);
+      gyro.y = THREE.MathUtils.clamp(-beta / 45, -1, 1);
+    };
+
+    let orientationEnabled = false;
+    let orientationRequested = false;
+
+    const addOrientationListener = () => {
+      if (orientationEnabled) {
+        return;
+      }
+
+      window.addEventListener("deviceorientation", handleOrientation, true);
+      orientationEnabled = true;
+    };
+
+    const requestOrientation = async () => {
+      if (orientationRequested) {
+        return;
+      }
+
+      orientationRequested = true;
+      const OrientationEvent =
+        window.DeviceOrientationEvent as DeviceOrientationEventWithPermission | undefined;
+
+      if (!OrientationEvent) {
+        return;
+      }
+
+      if (typeof OrientationEvent.requestPermission === "function") {
+        try {
+          const permission = await OrientationEvent.requestPermission();
+
+          if (permission === "granted") {
+            addOrientationListener();
+          }
+        } catch {
+          orientationRequested = false;
+        }
+        return;
+      }
+
+      addOrientationListener();
+    };
+
+    const OrientationEvent =
+      window.DeviceOrientationEvent as DeviceOrientationEventWithPermission | undefined;
+
+    if (OrientationEvent) {
+      if (typeof OrientationEvent.requestPermission === "function") {
+        window.addEventListener("pointerdown", requestOrientation, {
+          once: true,
+          passive: true
+        });
+        window.addEventListener("touchstart", requestOrientation, {
+          once: true,
+          passive: true
+        });
+      } else {
+        addOrientationListener();
+      }
+    }
 
     const handleHero = (event: Event) => {
       state.hero = (event as SceneEvent).detail.progress;
@@ -210,9 +283,14 @@ export default function WebGLScene() {
         0.08
       );
 
+      const gyroInfluence = window.innerWidth < 768 ? 0.72 : 0.28;
       const mouseInfluence = 0.22;
+      input.set(
+        THREE.MathUtils.clamp(mouse.x + gyro.x * gyroInfluence, -1, 1),
+        THREE.MathUtils.clamp(mouse.y + gyro.y * gyroInfluence, -1, 1)
+      );
       particleMaterial.uniforms.uTime.value = elapsed;
-      particleMaterial.uniforms.uMouse.value.lerp(mouse, 0.06);
+      particleMaterial.uniforms.uMouse.value.lerp(input, 0.06);
       particleMaterial.uniforms.uHero.value = smoothState.hero;
       particleMaterial.uniforms.uContact.value = smoothState.contact;
 
@@ -221,10 +299,10 @@ export default function WebGLScene() {
 
       wireGroup.position.x =
         THREE.MathUtils.lerp(2.35, 0.1, smoothState.hero) +
-        mouse.x * mouseInfluence;
+        input.x * mouseInfluence;
       wireGroup.position.y =
         THREE.MathUtils.lerp(-0.15, 0.08, smoothState.hero) +
-        mouse.y * mouseInfluence * 0.62;
+        input.y * mouseInfluence * 0.62;
       wireGroup.position.z = THREE.MathUtils.lerp(-0.4, 0.15, smoothState.hero);
       wireGroup.scale.setScalar(
         1 + smoothState.hero * 0.62 + smoothState.about * 0.34
@@ -252,6 +330,9 @@ export default function WebGLScene() {
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("deviceorientation", handleOrientation, true);
+      window.removeEventListener("pointerdown", requestOrientation);
+      window.removeEventListener("touchstart", requestOrientation);
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("webgl:hero", handleHero);
       window.removeEventListener("webgl:about", handleAbout);

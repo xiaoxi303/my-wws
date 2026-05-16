@@ -140,52 +140,66 @@ button {
 }
 
 .creative-nav {
+  pointer-events: none;
   color: #f5f5ef;
-  will-change: transform, padding;
+  will-change: opacity, transform;
 }
 
-.creative-nav.is-hidden {
-  transform: translateY(-110%);
+.creative-nav::before {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  opacity: 0;
+  background: linear-gradient(to bottom, rgba(3, 3, 3, 0.5), transparent);
+  backdrop-filter: blur(10px);
+  transition: opacity 360ms ease;
 }
 
-.creative-nav-inner {
-  min-height: 3.8rem;
+.creative-nav.is-scrolled::before,
+.creative-nav.is-open::before {
+  opacity: 1;
 }
 
-.creative-nav:not(.is-scrolled):not(.is-open) .creative-nav-inner {
+.creative-brand,
+.creative-status,
+.creative-menu-button {
+  pointer-events: auto;
+  position: absolute;
+  top: clamp(0.95rem, 2vw, 1.45rem);
+  border-radius: 999px;
+  white-space: nowrap;
+  backdrop-filter: blur(14px);
+}
+
+.creative-brand,
+.creative-status {
+  border: 1px solid rgba(245, 245, 239, 0.12);
+  background: rgba(245, 245, 239, 0.045);
+  color: #f5f5ef;
   mix-blend-mode: difference;
 }
 
-.creative-nav.is-scrolled .creative-nav-inner,
-.creative-nav.is-open .creative-nav-inner {
-  min-height: 3.2rem;
-  border: 1px solid rgba(245, 245, 239, 0.14);
-  background: rgba(5, 5, 5, 0.58);
-  box-shadow: 0 1rem 4rem rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(18px);
+.creative-brand {
+  left: clamp(1rem, 3vw, 3rem);
+  padding: 0.72rem 1.05rem;
+  text-align: left;
+  transform: translate3d(0, 0, 0);
 }
 
-.creative-nav-status {
-  border: 1px solid rgba(245, 245, 239, 0.14);
-  background: rgba(245, 245, 239, 0.06);
-  color: currentColor;
-}
-
-.creative-nav:not(.is-scrolled):not(.is-open) .creative-nav-status {
-  border-color: transparent;
-  background: transparent;
+.creative-status {
+  left: 58vw;
+  padding: 0.72rem 1rem;
 }
 
 .creative-menu-button {
-  border-color: rgba(245, 245, 239, 0.28);
+  right: clamp(1rem, 3vw, 3rem);
+  border: 1px solid rgba(245, 245, 239, 0.92);
   background: rgba(245, 245, 239, 0.92);
   color: #050505;
-}
-
-.creative-lang-button {
-  border-color: rgba(245, 245, 239, 0.18);
-  background: rgba(245, 245, 239, 0.06);
-  color: currentColor;
+  padding: 0.92rem 1.35rem;
+  box-shadow: 0 0.75rem 2.5rem rgba(0, 0, 0, 0.26);
 }
 
 .creative-menu-button:hover {
@@ -394,27 +408,31 @@ button {
   }
 
   .creative-nav {
-    padding-inline: 0.75rem;
-    padding-top: 0.75rem;
+    height: 4.5rem;
   }
 
-  .creative-nav-inner {
-    grid-template-columns: 1fr auto;
-    min-height: 3.35rem;
+  .creative-brand,
+  .creative-status,
+  .creative-menu-button {
+    top: 0.75rem;
   }
 
-  .creative-nav-status {
-    display: none;
+  .creative-brand {
+    left: 0.75rem;
+    padding: 0.66rem 0.82rem;
+    font-size: 0.62rem;
+  }
+
+  .creative-status {
+    left: 49vw;
+    padding: 0.66rem 0.74rem;
+    font-size: 0.58rem;
   }
 
   .creative-menu-button {
-    padding-inline: 1rem;
-    padding-block: 0.8rem;
-  }
-
-  .creative-lang-button {
-    padding-inline: 0.8rem;
-    padding-block: 0.8rem;
+    right: 0.75rem;
+    padding: 0.78rem 0.98rem;
+    font-size: 0.62rem;
   }
 
   .project-meta-grid {

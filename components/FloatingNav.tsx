@@ -36,12 +36,12 @@ export default function FloatingNav() {
   const { lang, toggleLang } = useLanguage();
   const text = uiText[lang];
   const headerRef = useRef<HTMLElement>(null);
+  const brandRef = useRef<HTMLButtonElement>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
-  const openRef = useRef(false);
   const menuTimeline = useRef<gsap.core.Timeline | null>(null);
   const [active, setActive] = useState<SectionId>("home");
   const [scrolled, setScrolled] = useState(false);
-  const [hidden, setHidden] = useState(false);
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -58,9 +58,13 @@ export default function FloatingNav() {
     window.addEventListener("section:active", handleActive);
 
     const context = gsap.context(() => {
+      const header = headerRef.current;
+      const brand = brandRef.current;
+      const status = statusRef.current;
+
       gsap.fromTo(
-        headerRef.current,
-        { autoAlpha: 0, y: -18 },
+        header,
+        { autoAlpha: 0, y: -16 },
         {
           autoAlpha: 1,
           y: 0,
@@ -70,19 +74,56 @@ export default function FloatingNav() {
         }
       );
 
+      if (brand && status) {
+        gsap.set(brand, {
+          x: 0,
+          transformOrigin: "50% 50%",
+          willChange: "transform"
+        });
+        gsap.set(status, {
+          autoAlpha: 1,
+          y: 0,
+          willChange: "opacity, transform"
+        });
+
+        gsap
+          .timeline({
+            scrollTrigger: {
+              start: 0,
+              end: 600,
+              scrub: true,
+              invalidateOnRefresh: true,
+              onUpdate: (self) => {
+                setScrolled(self.scroll() > 12);
+              }
+            },
+            defaults: { ease: "none" }
+          })
+          .to(
+            brand,
+            {
+              x: () =>
+                window.innerWidth / 2 - brand.offsetLeft - brand.offsetWidth / 2,
+              duration: 1
+            },
+            0
+          )
+          .to(
+            status,
+            {
+              autoAlpha: 0,
+              y: -8,
+              duration: 0.62
+            },
+            0.18
+          );
+      }
+
       ScrollTrigger.create({
-        start: 8,
+        start: 601,
         end: "max",
         onUpdate: (self) => {
-          const scroll = self.scroll();
-          setScrolled(scroll > 24);
-
-          if (!openRef.current) {
-            setHidden(scroll > 140 && self.direction === 1);
-            if (self.direction === -1) {
-              setHidden(false);
-            }
-          }
+          setScrolled(self.scroll() > 12);
         }
       });
 
@@ -116,7 +157,7 @@ export default function FloatingNav() {
         .fromTo(
           "[data-menu-backdrop]",
           { autoAlpha: 0 },
-          { autoAlpha: 0.5, duration: 0.48 },
+          { autoAlpha: 0.58, duration: 0.48 },
           0
         )
         .to(
@@ -149,14 +190,12 @@ export default function FloatingNav() {
 
   useEffect(() => {
     const timeline = menuTimeline.current;
-    openRef.current = open;
 
     if (!timeline) {
       return;
     }
 
     if (open) {
-      setHidden(false);
       document.documentElement.classList.add("menu-open");
       timeline.play();
     } else {
@@ -168,16 +207,6 @@ export default function FloatingNav() {
       document.documentElement.classList.remove("menu-open");
     };
   }, [open]);
-
-  useEffect(() => {
-    const { gsap } = registerGsap();
-
-    gsap.to(headerRef.current, {
-      yPercent: hidden && !open ? -130 : 0,
-      duration: 0.55,
-      ease: "power3.out"
-    });
-  }, [hidden, open]);
 
   const scrollToSection = (id: string) => {
     setOpen(false);
@@ -206,42 +235,35 @@ export default function FloatingNav() {
     <>
       <header
         ref={headerRef}
-        className={`creative-nav fixed inset-x-0 top-0 z-[90] px-4 pt-4 opacity-0 transition-[transform,padding] duration-500 sm:px-8 ${
-          scrolled ? "is-scrolled pt-3" : ""
-        } ${hidden ? "is-hidden" : ""} ${open ? "is-open" : ""}`}
+        className={`creative-nav fixed inset-x-0 top-0 z-[90] h-20 opacity-0 ${
+          scrolled ? "is-scrolled" : ""
+        } ${open ? "is-open" : ""}`}
       >
-        <div className="creative-nav-inner mx-auto grid max-w-[92rem] grid-cols-[1fr_auto_1fr] items-center gap-4 rounded-full px-2 py-2 transition-all duration-500">
-          <button
-            type="button"
-            onClick={() => scrollToSection("home")}
-            className="creative-nav-word justify-self-start px-2 text-left text-[0.68rem] font-black uppercase leading-none sm:px-3"
-          >
-            {text.nav.brand}
-          </button>
+        <button
+          ref={brandRef}
+          type="button"
+          onClick={() => scrollToSection("home")}
+          className="creative-brand creative-nav-word font-display text-[0.72rem] font-black uppercase leading-none tracking-normal"
+        >
+          {text.nav.brand}
+        </button>
 
-          <div className="creative-nav-status rounded-full px-3 py-2 text-center text-[0.66rem] font-black uppercase leading-none sm:px-5">
-            {statusLabel} / {statusIndex}
-          </div>
-
-          <div className="flex items-center gap-2 justify-self-end">
-            <button
-              type="button"
-              onClick={toggleLang}
-              className="creative-lang-button rounded-full border px-4 py-3 text-[0.68rem] font-black uppercase leading-none transition-transform duration-300 hover:scale-95"
-            >
-              {lang === "en" ? "中文" : "EN"}
-            </button>
-            <button
-              type="button"
-              aria-expanded={open}
-              aria-controls="site-menu"
-              onClick={() => setOpen((value) => !value)}
-              className="creative-menu-button rounded-full border px-5 py-3 text-[0.68rem] font-black uppercase leading-none transition-transform duration-300 hover:scale-95"
-            >
-              {open ? text.nav.close : text.nav.menu}
-            </button>
-          </div>
+        <div
+          ref={statusRef}
+          className="creative-status text-[0.66rem] font-black uppercase leading-none tracking-normal"
+        >
+          {statusLabel} / {statusIndex}
         </div>
+
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls="site-menu"
+          onClick={() => setOpen((value) => !value)}
+          className="creative-menu-button text-[0.68rem] font-black uppercase leading-none tracking-normal transition-transform duration-300 hover:scale-95"
+        >
+          {open ? text.nav.close : text.nav.menu}
+        </button>
       </header>
 
       <div
@@ -291,7 +313,7 @@ export default function FloatingNav() {
             </nav>
           </div>
 
-          <div className="grid gap-8 border-t border-white/[0.14] pt-5 text-[0.68rem] font-black uppercase text-neutral-400 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+          <div className="grid gap-8 border-t border-white/[0.14] pt-5 text-[0.68rem] font-black uppercase text-neutral-400 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end">
             <a
               data-menu-meta
               href="mailto:studio@nullform.example"
@@ -299,6 +321,14 @@ export default function FloatingNav() {
             >
               {text.nav.email}
             </a>
+            <button
+              data-menu-meta
+              type="button"
+              onClick={toggleLang}
+              className="w-fit uppercase transition-colors duration-300 hover:text-white"
+            >
+              {lang === "en" ? "中文" : "EN"}
+            </button>
             <div data-menu-meta className="flex gap-4 sm:justify-end">
               <a
                 href="https://www.linkedin.com"
